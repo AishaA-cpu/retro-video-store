@@ -87,8 +87,6 @@ def post_one_customer():
 
 
 
-
-
 @customer_bp.route("/<customer_id>", methods=["DELETE"])
 def delete_one_customer(customer_id):
     request_body = request.get_json()
@@ -152,24 +150,133 @@ def update_one_customer(customer_id):
 # ********************** videos
 @video_bp.route("", methods=["POST"])
 def post_one_video():
-    pass
+    required_attributes = {"release_date", "title", "total_inventory"}
+    response_body = {}
+
+    form_data = request.get_json()
+    attributes = set(form_data.keys())
+    
+    helpers = model_helpers()
+    missing_attributes = helpers.missing_requirements(required_attributes, attributes)
+    
+    if missing_attributes:
+        return {
+            "details" : f"Request body must include {missing_attributes}."
+        }, HTTPStatus.BAD_REQUEST
+    
+    new_video = Video (
+        title = form_data["title"],
+        total_inventory  = form_data["total_inventory"],
+        release_date = form_data["release_date"]
+    )
+
+    db.session.add(new_video)
+    db.session.commit()
+
+    #response_body["id"] = new_customer.id
+    return {
+        "id" : new_video.id,
+        "title": new_video.title,
+        "total_inventory": new_video.total_inventory,
+        "message" : "successfully created"
+    }, HTTPStatus.CREATED
+
+    #return response_body, HTTPStatus.CREATED
 
 @video_bp.route("", methods=["GET"])
 def get_all_videos():
-    pass
+    request_body = request.get_json()
+    response_body = []
+    videos = Video.query.all()
+
+
+    for video in videos:
+        response_body.append(
+            {
+                "id" : video.id,
+                "total_inventory": video.total_inventory,
+                "title": video.title,
+            }
+        )
+
+    return jsonify(response_body)
 
 @video_bp.route("/<video_id>", methods=["GET"])
-def get_one_videos():
-    pass
+def get_one_videos(video_id):
+    request_body = request.get_json()
+    response_body = {}
+
+    if not video_id.isnumeric():
+        return "", HTTPStatus.BAD_REQUEST
+
+    videos = Video.query.get(video_id)
+    
+    if videos is None:
+        return {
+            "message":f"Video {video_id} was not found"
+        }, HTTPStatus.NOT_FOUND
+
+    response_body["id"] = videos.id
+    response_body["title"] = videos.title
+    response_body["total_inventory"] = videos.total_inventory
+
+    return response_body, HTTPStatus.OK
 
 @video_bp.route("/<video_id>", methods=["PUT"])
-def update_one_video():
-    pass
+def update_one_video(video_id):
+    form_data = request.get_json()
+    response = {}
+    required_attributes = {"release_date", "title", "total_inventory"}
+
+    video = Video.query.get(video_id)
+
+    attributes = set(form_data.keys())
+
+    if video is None:
+        return {
+            "message": f"Video {video_id} was not found"
+            }, HTTPStatus.NOT_FOUND
+
+    helpers = model_helpers()
+    missing_attributes = helpers.missing_requirements(required_attributes, attributes)
+    
+    if missing_attributes:
+        return {
+            "details" : f"Request body must include {missing_attributes}."
+        }, HTTPStatus.BAD_REQUEST
+
+    video.release_date = form_data["release_date"],
+    video.title = form_data["title"],
+    video.total_inventory = form_data["total_inventory"]
+
+    db.session.commit()
+
+    return {
+        "title" : video.title,
+        "release_date":  video.release_date,
+        "total_inventory": video.total_inventory,
+        "message" : "successfully created"
+    }, HTTPStatus.OK
 
 
 @video_bp.route("/<video_id>", methods=["DELETE"])
-def delete_one_videos():
-    pass
+def delete_one_videos(video_id):
+    request_body = request.get_json()
+    response = {}
+
+    video = Video.query.get(video_id)
+    if video is None:
+        return {
+            "message": f"Video {video_id} was not found"
+            }, HTTPStatus.NOT_FOUND
+
+    db.session.delete(video)
+    db.session.commit()
+
+    return {
+        "id" : video.id,
+        "message" : f"video {video.id} successfully deleted"
+    }, HTTPStatus.OK
 
 
 

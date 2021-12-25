@@ -272,7 +272,7 @@ def test_create_customer(client):
     assert new_customer.postal_code == CUSTOMER_POSTAL_CODE
     assert new_customer.phone == CUSTOMER_PHONE
 
-def test_create_customer_must_contain_postal(client):
+def test_create_customer_must_contain_postal(client): 
     # Act
     response = client.post("/customers", json={
         "name": CUSTOMER_NAME,
